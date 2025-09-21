@@ -1,5 +1,5 @@
 import { openai } from "@ai-sdk/openai"
-import { consumeStream, convertToModelMessages, streamText, type UIMessage, tool } from "ai"
+import { convertToModelMessages, streamText, type UIMessage, tool } from "ai"
 import { z } from "zod"
 
 export const maxDuration = 30
@@ -271,7 +271,7 @@ export async function POST(req: Request) {
   const prompt = convertToModelMessages(messages)
 
   const result = streamText({
-    model: openai.responses("gpt-4o"),
+    model: openai("gpt-4o"),
     messages: [
       {
         role: "system",
@@ -309,15 +309,7 @@ export async function POST(req: Request) {
     ],
     tools: travelPlanningTools,
     abortSignal: req.signal,
-    maxSteps: 5,
   })
 
-  return result.toUIMessageStreamResponse({
-    onFinish: async ({ isAborted }) => {
-      if (isAborted) {
-        console.log("Travel chat aborted")
-      }
-    },
-    consumeSseStream: consumeStream,
-  })
+  return result.toTextStreamResponse()
 }
