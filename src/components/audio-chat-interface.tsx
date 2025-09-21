@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Mic, MicOff, Volume2, VolumeX, Play, Pause } from "lucide-react"
+import { Mic, MicOff, BotMessageSquare } from "lucide-react"
 import TravelOutputPanel from "@/components/travel-output-panel"
 
 interface AudioMessage {
@@ -27,19 +27,11 @@ export default function AudioChatInterface() {
   ])
   const [isRecording, setIsRecording] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
-  const [isMuted, setIsMuted] = useState(false)
-  const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null)
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
-  const audioRef = useRef<HTMLAudioElement | null>(null)
 
-  useEffect(() => {
-    // Initialize audio context for better browser support
-    if (typeof window !== "undefined") {
-      audioRef.current = new Audio()
-    }
-  }, [])
+  // Remove audio context initialization - only recording animation now
 
   const startRecording = async () => {
     try {
@@ -75,7 +67,7 @@ export default function AudioChatInterface() {
   }
 
   const processAudioMessage = async (audioBlob: Blob) => {
-    // Simulate transcription and AI response
+    // Simulate transcription (no audio response)
     const transcribedText = "I'd like to plan a 3-day trip to Tokyo with a medium budget."
 
     const userMessage: AudioMessage = {
@@ -101,50 +93,15 @@ export default function AudioChatInterface() {
       setMessages((prev) => [...prev, aiResponse])
       setIsProcessing(false)
 
-      // Auto-play AI response if not muted
-      if (!isMuted) {
-        playAIResponse(aiResponse.content)
-      }
+      // No audio response - just display the text
     }, 2000)
   }
 
-  const playAIResponse = async (text: string) => {
-    // Simulate text-to-speech
-    if ("speechSynthesis" in window) {
-      const utterance = new SpeechSynthesisUtterance(text)
-      utterance.rate = 0.9
-      utterance.pitch = 1
-      utterance.volume = 0.8
-
-      utterance.onstart = () => setCurrentlyPlaying("ai-response")
-      utterance.onend = () => setCurrentlyPlaying(null)
-
-      speechSynthesis.speak(utterance)
-    }
-  }
-
+  // Removed audio playback functions - only recording animation now
+  
   const togglePlayback = (messageId: string, audioUrl?: string, text?: string) => {
-    if (currentlyPlaying === messageId) {
-      // Stop current playback
-      if (audioUrl && audioRef.current) {
-        audioRef.current.pause()
-        audioRef.current.currentTime = 0
-      } else {
-        speechSynthesis.cancel()
-      }
-      setCurrentlyPlaying(null)
-    } else {
-      // Start playback
-      if (audioUrl && audioRef.current) {
-        audioRef.current.src = audioUrl
-        audioRef.current.play()
-        audioRef.current.onended = () => setCurrentlyPlaying(null)
-        setCurrentlyPlaying(messageId)
-      } else if (text) {
-        playAIResponse(text)
-        setCurrentlyPlaying(messageId)
-      }
-    }
+    // Disabled audio playback - only show recording animation
+    return
   }
 
   return (
@@ -154,13 +111,13 @@ export default function AudioChatInterface() {
         <div className="p-4 border-b border-border">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-              <Mic className="w-5 h-5 text-primary" />
-              Voice Chat with AI
+              <BotMessageSquare className="w-5 h-5 text-primary" />
+              Chat with AI Travel Planner
             </h2>
-            <Button variant="outline" size="sm" onClick={() => setIsMuted(!isMuted)} className="gap-2">
+            {/* <Button variant="outline" size="sm" onClick={() => setIsMuted(!isMuted)} className="gap-2">
               {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
               {isMuted ? "Unmute" : "Mute"}
-            </Button>
+            </Button> */}
           </div>
         </div>
 
@@ -177,22 +134,7 @@ export default function AudioChatInterface() {
                     <p className="text-sm">{message.content}</p>
                     <span className="text-xs opacity-70 mt-1 block">{message.timestamp.toLocaleTimeString()}</span>
                   </div>
-
-                  {/* Audio playback controls */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      togglePlayback(
-                        message.id,
-                        message.audioUrl,
-                        message.role === "assistant" ? message.content : undefined,
-                      )
-                    }
-                    className="p-1 h-auto"
-                  >
-                    {currentlyPlaying === message.id ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
-                  </Button>
+                  {/* Audio playback controls removed - only recording animation */}
                 </div>
               </div>
             </div>
@@ -249,7 +191,7 @@ export default function AudioChatInterface() {
             </div>
           </div>
 
-          {/* Audio Visualization */}
+          {/* Audio Visualization - Recording Animation Only */}
           {isRecording && (
             <div className="flex items-center justify-center gap-1 mt-4">
               {[...Array(20)].map((_, i) => (
@@ -263,25 +205,6 @@ export default function AudioChatInterface() {
                   }}
                 ></div>
               ))}
-            </div>
-          )}
-
-          {/* AI Response Animation */}
-          {currentlyPlaying === "ai-response" && (
-            <div className="flex items-center justify-center gap-2 mt-4">
-              <div className="text-primary">
-                <Volume2 className="w-5 h-5" />
-              </div>
-              <div className="flex items-center gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                    style={{ animationDelay: `${i * 0.1}s` }}
-                  ></div>
-                ))}
-              </div>
-              <span className="text-sm text-muted-foreground">AI is speaking...</span>
             </div>
           )}
         </div>

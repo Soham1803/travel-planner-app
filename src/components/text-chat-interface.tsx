@@ -4,7 +4,7 @@ import { useChat } from "@ai-sdk/react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Send, MessageSquare, MapPin, Calendar, Star, Clock, Phone, Info, Navigation, Utensils, Brain, Lightbulb, ChevronDown, ChevronUp } from "lucide-react"
+import { Send, MessageSquare, MapPin, Calendar, Star, Clock, Phone, Info, Navigation, Utensils, Brain, Lightbulb, ChevronDown, ChevronUp, BotMessageSquare } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import TravelOutputPanel from "./travel-output-panel"
 import { useState, useEffect, useRef } from "react"
@@ -186,7 +186,7 @@ export default function TextChatInterface() {
       <Card className="flex flex-col gradient-card border-border">
         <div className="p-4 border-b border-border">
           <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-primary" />
+            <BotMessageSquare className="w-5 h-5 text-primary" />
             Chat with AI Travel Planner
           </h2>
         </div>
