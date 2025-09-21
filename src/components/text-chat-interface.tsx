@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Send, MessageSquare, MapPin, Calendar, Star, Clock, Phone, Info, Navigation, Utensils } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import TravelOutputPanel from "./travel-output-panel"
 
 export default function TextChatInterface() {
   const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
@@ -399,28 +400,7 @@ export default function TextChatInterface() {
         </div>
       </Card>
 
-      {/* Travel Output Panel - Enhanced with dynamic content */}
-      <Card className="gradient-card border-border overflow-y-auto">
-        <div className="p-4 border-b border-border">
-          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <MapPin className="w-5 h-5 text-primary" />
-            Travel Insights
-          </h2>
-        </div>
-
-        <div className="p-4 space-y-6">
-          <div className="text-center py-8">
-            <MapPin className="w-12 h-12 text-primary mx-auto mb-4" />
-            <p className="text-muted-foreground mb-2">Start chatting to see personalized travel recommendations!</p>
-            <div className="text-sm text-muted-foreground space-y-1">
-              <p>• Detailed itineraries with timing and locations</p>
-              <p>• Hotel comparisons with pros and cons</p>
-              <p>• Restaurant suggestions with dietary options</p>
-              <p>• Local transportation and safety information</p>
-            </div>
-          </div>
-        </div>
-      </Card>
+     <TravelOutputPanel /> 
     </div>
   )
 }

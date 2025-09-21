@@ -17,8 +17,29 @@ import {
   Heart,
   Share2,
   ExternalLink,
+  Plane,
+  Car,
+  Train,
+  Bus,
+  Mountain,
+  Building,
+  TreePine,
+  Camera as CameraIcon,
+  DollarSign,
+  AlertTriangle,
+  CheckCircle,
+  Info,
+  Route,
+  Timer,
+  Users,
+  Luggage,
+  CloudSnow,
+  Sun,
+  Cloud,
 } from "lucide-react"
 import GoogleMaps from "./GoogleMaps"
+import itineraryData from "@/app/data/iternary.json"
+import travelOptionsData from "@/app/data/travel-options.json"
 
 export default function TravelOutputPanel() {
   const [activeTab, setActiveTab] = useState("overview")
@@ -34,97 +55,35 @@ export default function TravelOutputPanel() {
     setFavoriteItems(newFavorites)
   }
 
-  const sampleItinerary = [
-    {
-      id: "day1",
-      day: 1,
-      title: "Arrival & City Center",
-      activities: [
-        { time: "10:00 AM", activity: "Arrive at Tokyo Haneda Airport", location: "Haneda Airport" },
-        { time: "12:00 PM", activity: "Check into hotel", location: "Shibuya District" },
-        { time: "2:00 PM", activity: "Explore Shibuya Crossing", location: "Shibuya" },
-        { time: "6:00 PM", activity: "Dinner at traditional restaurant", location: "Shibuya" },
-      ],
-      budget: "$150-200",
-    },
-    {
-      id: "day2",
-      day: 2,
-      title: "Cultural Experience",
-      activities: [
-        { time: "9:00 AM", activity: "Visit Senso-ji Temple", location: "Asakusa" },
-        { time: "11:00 AM", activity: "Traditional market shopping", location: "Nakamise Street" },
-        { time: "1:00 PM", activity: "Lunch at local ramen shop", location: "Asakusa" },
-        { time: "3:00 PM", activity: "Tokyo National Museum", location: "Ueno" },
-        { time: "7:00 PM", activity: "Dinner in Ginza", location: "Ginza" },
-      ],
-      budget: "$120-180",
-    },
-  ]
+  const getTravelModeIcon = (mode: string) => {
+    switch (mode.toLowerCase()) {
+      case 'flight':
+        return <Plane className="w-4 h-4" />
+      case 'road_taxi_private':
+      case 'road_taxi':
+      case 'road_taxi_or_bus':
+      case 'road_taxi_short':
+        return <Car className="w-4 h-4" />
+      case 'train_shatabdi':
+      case 'train_long_distance':
+      case 'toy_train_or_taxi':
+        return <Train className="w-4 h-4" />
+      case 'road_bus_volvo_or_shared_taxi':
+      case 'road_bus_overnight':
+      case 'road_bus_overnight_option':
+        return <Bus className="w-4 h-4" />
+      default:
+        return <Navigation className="w-4 h-4" />
+    }
+  }
 
-  const sampleHotels = [
-    {
-      id: "hotel1",
-      name: "Tokyo Grand Hotel",
-      rating: 4.8,
-      pricePerNight: 280,
-      location: "Shibuya",
-      amenities: ["Free WiFi", "Spa", "Rooftop Bar", "Fitness Center", "Concierge"],
-      description: "Luxury hotel in the heart of Tokyo with stunning city views",
-      image: "/luxury-hotel-tokyo.jpg",
-      pros: ["Prime location", "Excellent service", "Modern facilities"],
-      cons: ["Expensive", "Busy area"],
-    },
-    {
-      id: "hotel2",
-      name: "Sakura Boutique Inn",
-      rating: 4.5,
-      pricePerNight: 180,
-      location: "Asakusa",
-      amenities: ["Free WiFi", "Traditional Bath", "Garden View", "Breakfast"],
-      description: "Traditional Japanese inn with authentic cultural experience",
-      image: "/traditional-japanese-inn.jpg",
-      pros: ["Authentic experience", "Peaceful location", "Great value"],
-      cons: ["Smaller rooms", "Limited English"],
-    },
-  ]
-
-  const sampleRestaurants = [
-    {
-      id: "rest1",
-      name: "Sushi Yamamoto",
-      cuisine: "Japanese",
-      rating: 4.9,
-      priceRange: "$$$",
-      hours: "5:00 PM - 11:00 PM",
-      phone: "+81-3-1234-5678",
-      location: "Ginza",
-      specialties: ["Omakase", "Fresh Sashimi", "Premium Sake"],
-      description: "Michelin-starred sushi restaurant with traditional preparation",
-      image: "/high-end-sushi-restaurant.jpg",
-    },
-    {
-      id: "rest2",
-      name: "Ramen Ichiban",
-      cuisine: "Japanese",
-      rating: 4.6,
-      priceRange: "$",
-      hours: "11:00 AM - 10:00 PM",
-      phone: "+81-3-8765-4321",
-      location: "Shibuya",
-      specialties: ["Tonkotsu Ramen", "Gyoza", "Chashu Pork"],
-      description: "Popular local ramen shop known for rich, flavorful broth",
-      image: "/authentic-ramen-shop-tokyo.jpg",
-    },
-  ]
-
-  const localContacts = [
-    { category: "Emergency", name: "Police", number: "110" },
-    { category: "Emergency", name: "Fire/Ambulance", number: "119" },
-    { category: "Tourist Info", name: "Tokyo Tourist Hotline", number: "+81-3-3201-3331" },
-    { category: "Transportation", name: "JR East Info", number: "+81-50-2016-1603" },
-    { category: "Medical", name: "Tokyo Medical Center", number: "+81-3-3411-0111" },
-  ]
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0,
+    }).format(amount)
+  }
 
   return (
     <Card className="gradient-card border-border overflow-hidden">
@@ -136,69 +95,73 @@ export default function TravelOutputPanel() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-        <TabsList className="grid w-full grid-cols-5 bg-muted/50 flex-shrink-0">
+        <TabsList className="grid w-full grid-cols-6 bg-muted/50 flex-shrink-0">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="itinerary">Itinerary</TabsTrigger>
-          <TabsTrigger value="hotels">Hotels</TabsTrigger>
+          <TabsTrigger value="travel">Travel Options</TabsTrigger>
+          <TabsTrigger value="hotels">Accommodations</TabsTrigger>
           <TabsTrigger value="dining">Dining</TabsTrigger>
-          <TabsTrigger value="contacts">Contacts</TabsTrigger>
+          <TabsTrigger value="contacts">Local Info</TabsTrigger>
         </TabsList>
 
         <div className="overflow-y-auto flex-1 min-h-0">
           <TabsContent value="overview" className="p-4 space-y-6">
-            {/* Destination Overview */}
+            {/* Trip Summary */}
             <div className="space-y-4">
               <h3 className="text-md font-medium text-foreground flex items-center gap-2">
-                <Camera className="w-4 h-4 text-accent" />
-                Destination Highlights
+                <MapPin className="w-4 h-4 text-accent" />
+                Trip Overview: {itineraryData.home_city} to {itineraryData.destination_city}
               </h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-muted/50 rounded-lg p-4 border border-border">
-                  <img
-                    src="/tokyo-skyline.png"
-                    alt="Tokyo Skyline"
-                    className="w-full h-24 object-cover rounded-md mb-3"
-                  />
-                  <h4 className="font-medium text-foreground mb-1">Tokyo Skyline</h4>
-                  <p className="text-sm text-muted-foreground">Modern metropolis with stunning city views</p>
-                </div>
-
-                <div className="bg-muted/50 rounded-lg p-4 border border-border">
-                  <img
-                    src="/tokyo-temple.png"
-                    alt="Traditional Temple"
-                    className="w-full h-24 object-cover rounded-md mb-3"
-                  />
-                  <h4 className="font-medium text-foreground mb-1">Historic Temples</h4>
-                  <p className="text-sm text-muted-foreground">Rich cultural heritage and traditions</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="space-y-3">
-              <h3 className="text-md font-medium text-foreground">Trip Summary</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-muted/50 rounded-lg p-3 border border-border text-center">
-                  <div className="text-2xl font-bold text-primary">3</div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-muted/50 rounded-lg p-4 border border-border text-center">
+                  <Calendar className="w-8 h-8 text-primary mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-primary">{itineraryData.num_days}</div>
                   <div className="text-sm text-muted-foreground">Days</div>
                 </div>
-                <div className="bg-muted/50 rounded-lg p-3 border border-border text-center">
-                  <div className="text-2xl font-bold text-primary">$800</div>
-                  <div className="text-sm text-muted-foreground">Est. Budget</div>
+                <div className="bg-muted/50 rounded-lg p-4 border border-border text-center">
+                  <MapPin className="w-8 h-8 text-primary mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-primary">{itineraryData.days.length}</div>
+                  <div className="text-sm text-muted-foreground">Planned Days</div>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-4 border border-border text-center">
+                  <Mountain className="w-8 h-8 text-primary mx-auto mb-2" />
+                  <div className="text-lg font-bold text-primary">Hill Station</div>
+                  <div className="text-sm text-muted-foreground">Destination Type</div>
                 </div>
               </div>
             </div>
 
-            {/* Interactive Map Placeholder */}
+            {/* Interactive Map */}
             <div className="space-y-3">
               <h3 className="text-md font-medium text-foreground flex items-center gap-2">
                 <Navigation className="w-4 h-4 text-accent" />
-                Interactive Map
+                Route Overview
               </h3>
               <div className="w-full h-[32rem]">
-                <GoogleMaps startPoint="Pune" endPoint="Shimla" travelMode="DRIVING" />
+                <GoogleMaps 
+                  startPoint={itineraryData.home_city} 
+                  endPoint={itineraryData.destination_city} 
+                  travelMode="DRIVING" 
+                />
+              </div>
+            </div>
+
+            {/* Travel Tips */}
+            <div className="space-y-3">
+              <h3 className="text-md font-medium text-foreground flex items-center gap-2">
+                <Info className="w-4 h-4 text-accent" />
+                Essential Travel Tips
+              </h3>
+              <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                <div className="grid gap-2">
+                  {itineraryData.overall_tips.slice(0, 5).map((tip, index) => (
+                    <div key={index} className="flex items-start gap-2 text-sm">
+                      <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span className="text-muted-foreground">{tip}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </TabsContent>
@@ -207,7 +170,7 @@ export default function TravelOutputPanel() {
             <div className="flex items-center justify-between">
               <h3 className="text-md font-medium text-foreground flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-accent" />
-                3-Day Tokyo Itinerary
+                {itineraryData.num_days}-Day {itineraryData.destination_city} Itinerary
               </h3>
               <Button variant="outline" size="sm">
                 <Share2 className="w-4 h-4 mr-2" />
@@ -215,209 +178,385 @@ export default function TravelOutputPanel() {
               </Button>
             </div>
 
-            {sampleItinerary.map((day) => (
-              <div key={day.id} className="bg-muted/50 rounded-lg p-4 border border-border">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-medium text-foreground">
-                    Day {day.day} - {day.title}
-                  </h4>
+            {itineraryData.days.map((day) => (
+              <div key={day.day} className="bg-muted/50 rounded-lg p-4 border border-border">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-sm">
+                      {day.day}
+                    </div>
+                    <h4 className="font-medium text-foreground">{day.summary}</h4>
+                  </div>
                   <Badge variant="outline" className="text-xs">
-                    {day.budget}
+                    Day {day.day}
                   </Badge>
                 </div>
 
-                <div className="space-y-3">
-                  {day.activities.map((activity, index) => (
-                    <div key={index} className="flex items-start gap-3 p-2 bg-background/50 rounded-md">
-                      <div className="text-xs text-primary font-medium min-w-[60px]">{activity.time}</div>
+                {day.entities.map((entity, entityIndex) => (
+                  <div key={entityIndex} className="mb-6 last:mb-0">
+                    <div className="flex items-start gap-3 mb-3">
+                      <Mountain className="w-5 h-5 text-accent mt-1" />
                       <div className="flex-1">
-                        <p className="text-sm text-foreground">{activity.activity}</p>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          {activity.location}
-                        </p>
+                        <h5 className="font-medium text-foreground mb-1">{entity.name}</h5>
+                        <p className="text-sm text-muted-foreground mb-3">{entity.speciality}</p>
                       </div>
+                    </div>
+
+                    <div className="grid gap-3 ml-8">
+                      {entity.places_to_visit.map((place, placeIndex) => (
+                        <div key={placeIndex} className="bg-background/50 rounded-md p-3 border border-border/50">
+                          <div className="flex items-start gap-2">
+                            <MapPin className="w-4 h-4 text-primary mt-1 flex-shrink-0" />
+                            <div className="flex-1">
+                              <h6 className="font-medium text-foreground text-sm mb-1">{place.name}</h6>
+                              <p className="text-xs text-muted-foreground">{place.description}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {entity.image_urls && entity.image_urls.length > 0 && (
+                      <div className="flex gap-2 mt-3 ml-8">
+                        {entity.image_urls.slice(0, 2).map((imageUrl, imgIndex) => (
+                          
+                          <div key={imgIndex} className="flex-1">
+                            <img
+                              src={imageUrl || "/placeholder.svg"}
+                              alt={`${entity.name} view ${imgIndex + 1}`}
+                              className="w-full h-80 object-cover rounded-md"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.src = "/placeholder.svg";
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {day.route_info && (
+                  <div className="mt-4 pt-3 border-t border-border">
+                    <div className="flex items-start gap-2">
+                      <Route className="w-4 h-4 text-accent mt-1" />
+                      <div>
+                        <h6 className="text-sm font-medium text-foreground mb-1">Route Information</h6>
+                        <p className="text-xs text-muted-foreground">{day.route_info}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </TabsContent>
+
+          <TabsContent value="travel" className="p-4 space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-md font-medium text-foreground flex items-center gap-2">
+                <Plane className="w-4 h-4 text-accent" />
+                Travel Options: {travelOptionsData.trip.from_city} to {travelOptionsData.trip.to_city}
+              </h3>
+              <Badge variant="secondary">{travelOptionsData.trip.duration_days} Days Trip</Badge>
+            </div>
+
+            {/* Outbound Journey */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
+                <Navigation className="w-4 h-4 text-green-600" />
+                Outbound Journey (Day {travelOptionsData.outbound.day_number})
+              </h4>
+              
+              {travelOptionsData.outbound.options.map((option) => (
+                <div key={option.id} className={`bg-muted/50 rounded-lg p-4 border-2 ${option.id === travelOptionsData.outbound.recommended_option_id ? 'border-green-500 bg-green-50/10' : 'border-border'}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <h5 className="font-medium text-foreground">{option.title}</h5>
+                      {option.id === travelOptionsData.outbound.recommended_option_id && (
+                        <Badge variant="default" className="bg-green-600">Recommended</Badge>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-medium text-primary">
+                        {formatCurrency(option.total_time_door_to_door_hours.min * 1000)} - {formatCurrency(option.total_time_door_to_door_hours.max * 1000)}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {option.total_time_door_to_door_hours.min}-{option.total_time_door_to_door_hours.max} hours
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-muted-foreground mb-3">{option.summary}</p>
+
+                  <div className="space-y-2">
+                    {option.segments.map((segment, segIndex) => (
+                      <div key={segIndex} className="flex items-center gap-3 p-2 bg-background/50 rounded-md">
+                        {getTravelModeIcon(segment.mode)}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="font-medium">{segment.from}</span>
+                            <span className="text-muted-foreground">→</span>
+                            <span className="font-medium">{segment.to}</span>
+                          </div>
+                          {segment.typical_duration_range_hours && (
+                            <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                              <Timer className="w-3 h-3" />
+                              {Array.isArray(segment.typical_duration_range_hours) 
+                                ? `${segment.typical_duration_range_hours[0]}-${segment.typical_duration_range_hours[1]} hours`
+                                : `${segment.typical_duration_range_hours} hours`
+                              }
+                            </div>
+                          )}
+                          {segment.estimated_cost_inr && (
+                            <div className="text-xs text-green-600 flex items-center gap-1 mt-1">
+                              <DollarSign className="w-3 h-3" />
+                              {typeof segment.estimated_cost_inr === 'object' && 'min' in segment.estimated_cost_inr && segment.estimated_cost_inr.min && segment.estimated_cost_inr.max
+                                ? `${formatCurrency(segment.estimated_cost_inr.min)} - ${formatCurrency(segment.estimated_cost_inr.max)}`
+                                : 'Cost varies'
+                              }
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {option.ideal_for && (
+                    <div className="mt-3 pt-3 border-t border-border">
+                      <div className="flex flex-wrap gap-1">
+                        {option.ideal_for.map((item, i) => (
+                          <Badge key={i} variant="outline" className="text-xs">
+                            ✓ {item}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {option.risks && (
+                    <div className="mt-2">
+                      <div className="flex flex-wrap gap-1">
+                        {option.risks.map((risk, i) => (
+                          <Badge key={i} variant="destructive" className="text-xs opacity-70">
+                            ⚠ {risk}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Return Journey */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
+                <Navigation className="w-4 h-4 text-blue-600 scale-x-[-1]" />
+                Return Journey (Day {travelOptionsData.return.day_number})
+              </h4>
+              
+              {travelOptionsData.return.options.map((option) => (
+                <div key={option.id} className={`bg-muted/50 rounded-lg p-4 border-2 ${option.id === travelOptionsData.return.recommended_option_id ? 'border-blue-500 bg-blue-50/10' : 'border-border'}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <h5 className="font-medium text-foreground">{option.title}</h5>
+                      {option.id === travelOptionsData.return.recommended_option_id && (
+                        <Badge variant="default" className="bg-blue-600">Recommended</Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-muted-foreground mb-3">{option.summary}</p>
+
+                  <div className="space-y-2">
+                    {option.segments.map((segment, segIndex) => (
+                      <div key={segIndex} className="flex items-center gap-3 p-2 bg-background/50 rounded-md">
+                        {getTravelModeIcon(segment.mode)}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="font-medium">{segment.from}</span>
+                            <span className="text-muted-foreground">→</span>
+                            <span className="font-medium">{segment.to}</span>
+                          </div>
+                          {segment.typical_duration_range_hours && (
+                            <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                              <Timer className="w-3 h-3" />
+                              {Array.isArray(segment.typical_duration_range_hours) 
+                                ? `${segment.typical_duration_range_hours[0]}-${segment.typical_duration_range_hours[1]} hours`
+                                : `${segment.typical_duration_range_hours} hours`
+                              }
+                            </div>
+                          )}
+                          {segment.estimated_cost_inr && (
+                            <div className="text-xs text-green-600 flex items-center gap-1 mt-1">
+                              <DollarSign className="w-3 h-3" />
+                              {typeof segment.estimated_cost_inr === 'object' && 'min' in segment.estimated_cost_inr && segment.estimated_cost_inr.min && segment.estimated_cost_inr.max
+                                ? `${formatCurrency(segment.estimated_cost_inr.min)} - ${formatCurrency(segment.estimated_cost_inr.max)}`
+                                : 'Cost varies'
+                              }
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Booking Tips */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
+                <Info className="w-4 h-4 text-accent" />
+                Booking Tips & Important Notes
+              </h4>
+              <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                <div className="grid gap-2">
+                  {travelOptionsData.booking_tips.map((tip, index) => (
+                    <div key={index} className="flex items-start gap-2 text-sm">
+                      <CheckCircle className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                      <span className="text-muted-foreground">{tip}</span>
                     </div>
                   ))}
                 </div>
               </div>
-            ))}
+            </div>
+
+            {/* Seasonal Notes */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
+                <CloudSnow className="w-4 h-4 text-accent" />
+                Seasonal & Weather Considerations
+              </h4>
+              <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                <div className="grid gap-2">
+                  {travelOptionsData.baggage_and_seasonal_notes.map((note, index) => (
+                    <div key={index} className="flex items-start gap-2 text-sm">
+                      <AlertTriangle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                      <span className="text-muted-foreground">{note}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value="hotels" className="p-4 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-md font-medium text-foreground flex items-center gap-2">
-                <Star className="w-4 h-4 text-accent" />
-                Recommended Accommodations
+                <Building className="w-4 h-4 text-accent" />
+                Recommended Accommodations in {itineraryData.destination_city}
               </h3>
             </div>
 
-            {sampleHotels.map((hotel) => (
-              <div key={hotel.id} className="bg-muted/50 rounded-lg p-4 border border-border">
-                <div className="flex gap-4">
-                  <img
-                    src={hotel.image || "/placeholder.svg"}
-                    alt={hotel.name}
-                    className="w-24 h-20 object-cover rounded-md"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium text-foreground">{hotel.name}</h4>
-                      <Button variant="ghost" size="sm" onClick={() => toggleFavorite(hotel.id)} className="p-1">
-                        <Heart
-                          className={`w-4 h-4 ${
-                            favoriteItems.has(hotel.id) ? "fill-red-500 text-red-500" : "text-muted-foreground"
-                          }`}
-                        />
-                      </Button>
-                    </div>
-
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="flex items-center gap-1">
-                        {[...Array(Math.floor(hotel.rating))].map((_, i) => (
-                          <Star key={i} className="w-3 h-3 fill-primary text-primary" />
-                        ))}
-                        <span className="text-xs text-muted-foreground">{hotel.rating}</span>
-                      </div>
-                      <Badge variant="secondary" className="text-xs">
-                        {hotel.location}
-                      </Badge>
-                    </div>
-
-                    <p className="text-sm text-muted-foreground mb-2">{hotel.description}</p>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-primary">${hotel.pricePerNight}/night</span>
-                      <Button variant="outline" size="sm">
-                        Book Now
-                      </Button>
-                    </div>
-                  </div>
+            <div className="bg-muted/50 rounded-lg p-6 border border-border text-center">
+              <Building className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h4 className="font-medium text-foreground mb-2">Accommodation Recommendations</h4>
+              <p className="text-sm text-muted-foreground mb-4">
+                Based on your {itineraryData.num_days}-day itinerary to {itineraryData.destination_city}, here are some accommodation suggestions:
+              </p>
+              <div className="text-left space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span className="text-muted-foreground">Stay near Mall Road for easy access to main attractions</span>
                 </div>
-
-                <div className="mt-3 pt-3 border-t border-border">
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    {hotel.amenities.map((amenity, i) => (
-                      <Badge key={i} variant="outline" className="text-xs">
-                        {amenity}
-                      </Badge>
-                    ))}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <span className="text-muted-foreground">Pros:</span>
-                      <ul className="text-foreground">
-                        {hotel.pros.map((pro, i) => (
-                          <li key={i}>• {pro}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Cons:</span>
-                      <ul className="text-foreground">
-                        {hotel.cons.map((con, i) => (
-                          <li key={i}>• {con}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span className="text-muted-foreground">Book hotels with mountain view rooms</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span className="text-muted-foreground">Look for properties with heating facilities</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span className="text-muted-foreground">Consider heritage hotels for authentic experience</span>
                 </div>
               </div>
-            ))}
+            </div>
           </TabsContent>
 
           <TabsContent value="dining" className="p-4 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-md font-medium text-foreground flex items-center gap-2">
                 <Utensils className="w-4 h-4 text-accent" />
-                Restaurant Recommendations
+                Local Cuisine & Dining in {itineraryData.destination_city}
               </h3>
             </div>
 
-            {sampleRestaurants.map((restaurant) => (
-              <div key={restaurant.id} className="bg-muted/50 rounded-lg p-4 border border-border">
-                <div className="flex gap-4">
-                  <img
-                    src={restaurant.image || "/placeholder.svg"}
-                    alt={restaurant.name}
-                    className="w-24 h-20 object-cover rounded-md"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium text-foreground">{restaurant.name}</h4>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs">
-                          {restaurant.cuisine}
-                        </Badge>
-                        <Button variant="ghost" size="sm" onClick={() => toggleFavorite(restaurant.id)} className="p-1">
-                          <Heart
-                            className={`w-4 h-4 ${
-                              favoriteItems.has(restaurant.id) ? "fill-red-500 text-red-500" : "text-muted-foreground"
-                            }`}
-                          />
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="flex items-center gap-1">
-                        {[...Array(Math.floor(restaurant.rating))].map((_, i) => (
-                          <Star key={i} className="w-3 h-3 fill-primary text-primary" />
-                        ))}
-                        <span className="text-xs text-muted-foreground">{restaurant.rating}</span>
-                      </div>
-                      <span className="text-xs font-medium text-primary">{restaurant.priceRange}</span>
-                    </div>
-
-                    <p className="text-sm text-muted-foreground mb-2">{restaurant.description}</p>
-
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {restaurant.hours}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Phone className="w-3 h-3" />
-                        {restaurant.phone}
-                      </span>
-                    </div>
+            <div className="bg-muted/50 rounded-lg p-6 border border-border text-center">
+              <Utensils className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h4 className="font-medium text-foreground mb-2">Himachali Cuisine Highlights</h4>
+              <p className="text-sm text-muted-foreground mb-4">
+                Discover the authentic flavors of Himachal Pradesh during your {itineraryData.num_days}-day stay:
+              </p>
+              <div className="text-left space-y-3">
+                <div className="bg-background/50 rounded-md p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Star className="w-4 h-4 text-yellow-500" />
+                    <span className="font-medium text-foreground">Must-Try Dishes</span>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Siddu, Chha Gosht, Babru, Dham, Aktori, Tudkiya Bhath
                   </div>
                 </div>
-
-                <div className="mt-3 pt-3 border-t border-border">
-                  <div className="flex flex-wrap gap-1">
-                    {restaurant.specialties.map((specialty, i) => (
-                      <Badge key={i} variant="outline" className="text-xs">
-                        {specialty}
-                      </Badge>
-                    ))}
+                <div className="bg-background/50 rounded-md p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <MapPin className="w-4 h-4 text-primary" />
+                    <span className="font-medium text-foreground">Best Areas for Dining</span>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Mall Road, The Ridge, Lakkar Bazaar, Lower Bazaar
+                  </div>
+                </div>
+                <div className="bg-background/50 rounded-md p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Sun className="w-4 h-4 text-orange-500" />
+                    <span className="font-medium text-foreground">Local Beverages</span>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Rhododendron juice, Apple cider, Local tea varieties, Kahwa
                   </div>
                 </div>
               </div>
-            ))}
+            </div>
           </TabsContent>
 
           <TabsContent value="contacts" className="p-4 space-y-4">
             <h3 className="text-md font-medium text-foreground flex items-center gap-2">
               <Phone className="w-4 h-4 text-accent" />
-              Important Local Contacts
+              Important Local Contacts & Information
             </h3>
 
-            <div className="space-y-3">
-              {localContacts.map((contact, index) => (
-                <div key={index} className="bg-muted/50 rounded-lg p-3 border border-border">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge variant="outline" className="text-xs">
-                          {contact.category}
-                        </Badge>
-                        <span className="font-medium text-foreground">{contact.name}</span>
-                      </div>
+            <div className="grid gap-4">
+              {/* Emergency Contacts */}
+              <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-red-500" />
+                  Emergency Contacts
+                </h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between bg-background/50 rounded-md p-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="destructive" className="text-xs">Emergency</Badge>
+                      <span className="font-medium text-foreground">Police</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-mono text-primary">{contact.number}</span>
+                      <span className="text-sm font-mono text-primary">100</span>
+                      <Button variant="outline" size="sm">
+                        <Phone className="w-3 h-3 mr-1" />
+                        Call
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between bg-background/50 rounded-md p-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="destructive" className="text-xs">Emergency</Badge>
+                      <span className="font-medium text-foreground">Fire/Ambulance</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-mono text-primary">101/108</span>
                       <Button variant="outline" size="sm">
                         <Phone className="w-3 h-3 mr-1" />
                         Call
@@ -425,20 +564,155 @@ export default function TravelOutputPanel() {
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
 
-            {/* Additional Travel Tips */}
-            <div className="mt-6 space-y-3">
-              <h4 className="text-sm font-medium text-foreground">Quick Travel Tips</h4>
-              <div className="bg-muted/50 rounded-lg p-3 border border-border">
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Download Google Translate app for offline translation</li>
-                  <li>• Get a JR Pass for unlimited train travel</li>
-                  <li>• Cash is preferred - withdraw from 7-Eleven ATMs</li>
-                  <li>• Bow slightly when greeting locals</li>
-                  <li>• Remove shoes when entering homes/temples</li>
-                </ul>
+              {/* Tourist Information */}
+              <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
+                  <Info className="w-4 h-4 text-blue-500" />
+                  Tourist Information
+                </h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between bg-background/50 rounded-md p-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs">Tourist Info</Badge>
+                      <span className="font-medium text-foreground">Shimla Tourist Office</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-mono text-primary">0177-2652561</span>
+                      <Button variant="outline" size="sm">
+                        <Phone className="w-3 h-3 mr-1" />
+                        Call
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between bg-background/50 rounded-md p-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs">Transport</Badge>
+                      <span className="font-medium text-foreground">HRTC Bus Stand</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-mono text-primary">0177-2652574</span>
+                      <Button variant="outline" size="sm">
+                        <Phone className="w-3 h-3 mr-1" />
+                        Call
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Local Transit Tips */}
+              <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
+                  <Car className="w-4 h-4 text-green-500" />
+                  Local Transportation Tips
+                </h4>
+                <div className="space-y-2">
+                  {travelOptionsData.local_transit_in_shimla.map((tip, index) => (
+                    <div key={index} className="flex items-start gap-2 text-sm">
+                      <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span className="text-muted-foreground">{tip}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="contacts" className="p-4 space-y-4">
+            <h3 className="text-md font-medium text-foreground flex items-center gap-2">
+              <Phone className="w-4 h-4 text-accent" />
+              Important Local Contacts & Information
+            </h3>
+
+            <div className="grid gap-4">
+              {/* Emergency Contacts */}
+              <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-red-500" />
+                  Emergency Contacts
+                </h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between bg-background/50 rounded-md p-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="destructive" className="text-xs">Emergency</Badge>
+                      <span className="font-medium text-foreground">Police</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-mono text-primary">100</span>
+                      <Button variant="outline" size="sm">
+                        <Phone className="w-3 h-3 mr-1" />
+                        Call
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between bg-background/50 rounded-md p-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="destructive" className="text-xs">Emergency</Badge>
+                      <span className="font-medium text-foreground">Fire/Ambulance</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-mono text-primary">101/108</span>
+                      <Button variant="outline" size="sm">
+                        <Phone className="w-3 h-3 mr-1" />
+                        Call
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tourist Information */}
+              <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
+                  <Info className="w-4 h-4 text-blue-500" />
+                  Tourist Information
+                </h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between bg-background/50 rounded-md p-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs">Tourist Info</Badge>
+                      <span className="font-medium text-foreground">Shimla Tourist Office</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-mono text-primary">0177-2652561</span>
+                      <Button variant="outline" size="sm">
+                        <Phone className="w-3 h-3 mr-1" />
+                        Call
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between bg-background/50 rounded-md p-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs">Transport</Badge>
+                      <span className="font-medium text-foreground">HRTC Bus Stand</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-mono text-primary">0177-2652574</span>
+                      <Button variant="outline" size="sm">
+                        <Phone className="w-3 h-3 mr-1" />
+                        Call
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Local Transit Tips */}
+              <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
+                  <Car className="w-4 h-4 text-green-500" />
+                  Local Transportation Tips
+                </h4>
+                <div className="space-y-2">
+                  {travelOptionsData.local_transit_in_shimla.map((tip, index) => (
+                    <div key={index} className="flex items-start gap-2 text-sm">
+                      <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span className="text-muted-foreground">{tip}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </TabsContent>
