@@ -260,9 +260,9 @@ export default function TravelOutputPanel({ showContent = false }: TravelOutputP
 
   // Download travel pamphlet
   const downloadTravelPamphlet = () => {
-    // Create a link to download the PDF from the public folder
+    // Create a link to download the PDF from the public/static folder
     const link = document.createElement('a')
-    link.href = '/travel-pamplet.pdf'
+    link.href = '/static/travel-pamplet.pdf'
     link.download = 'pune-to-shimla-travel-guide.pdf'
     link.target = '_blank'
     

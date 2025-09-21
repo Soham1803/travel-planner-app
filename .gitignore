@@ -18,6 +18,7 @@
 /out/
 src/app/data
 public/static
+public/shimla/accommodation
 
 # production
 /build
