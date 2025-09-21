@@ -12,12 +12,12 @@ import thinkingData from "@/app/data/thinking.json"
 
 // Configuration for thinking animation timing
 const THINKING_CONFIG = {
-  initialDelay: 1000, // Initial delay before thinking starts
-  stepBaseDelay: 800, // Base delay between steps
-  stepRandomDelay: 400, // Random additional delay (0 to this value)
-  typingSpeed: 35, // Characters per second for typing effect
-  pauseBetweenSentences: 200, // Pause between sentences in typing
-  dotAnimationSpeed: 400, // Speed of thinking dots animation
+  initialDelay: 800, // Initial delay before thinking starts
+  stepBaseDelay: 400, // Base delay between steps
+  stepRandomDelay: 200, // Random additional delay (0 to this value)
+  typingSpeed: 25, // Characters per second for typing effect
+  pauseBetweenSentences: 100, // Pause between sentences in typing
+  dotAnimationSpeed: 300, // Speed of thinking dots animation
   completionDelay: 2000, // Delay after thinking before showing output panel
 }
 
