@@ -28,6 +28,7 @@ import {
   DollarSign,
   AlertTriangle,
   CheckCircle,
+  Download,
   Info,
   Route,
   Timer,
@@ -36,6 +37,7 @@ import {
   CloudSnow,
   Sun,
   Cloud,
+  ShoppingBag,
 } from "lucide-react"
 import GoogleMaps from "./GoogleMaps"
 import itineraryData from "@/app/data/iternary.json"
@@ -256,19 +258,54 @@ export default function TravelOutputPanel({ showContent = false }: TravelOutputP
     )
   }
 
+  // Download travel pamphlet
+  const downloadTravelPamphlet = () => {
+    // Create a link to download the PDF from the public folder
+    const link = document.createElement('a')
+    link.href = '/travel-pamplet.pdf'
+    link.download = 'pune-to-shimla-travel-guide.pdf'
+    link.target = '_blank'
+    
+    // Trigger download
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   return (
     <Card className="gradient-card border-border overflow-hidden">
       <div className="p-4 border-b border-border">
-        <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-          <MapPin className="w-5 h-5 text-primary" />
-          Travel Insights & Planning
-          {isLoadingSection && (
-            <div className="ml-auto flex items-center gap-2 text-sm text-muted-foreground">
-              <div className="w-2 h-2 bg-blue-500 rounded-full animate-ping"></div>
-              Loading {sections.find(s => s.key === isLoadingSection)?.name}...
-            </div>
-          )}
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-primary" />
+            Travel Insights & Planning
+            {isLoadingSection && (
+              <div className="ml-4 flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-ping"></div>
+                Loading {sections.find(s => s.key === isLoadingSection)?.name}...
+              </div>
+            )}
+          </h2>
+          <div className="flex items-center gap-2">
+            <Button 
+              onClick={downloadTravelPamphlet}
+              size="sm"
+              variant="outline"
+              className="flex items-center gap-2 text-primary border-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Download travel pamphlet
+            </Button>
+            <Button 
+              onClick={() => window.open('/booking', '_blank')}
+              size="sm"
+              className="flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              <ShoppingBag className="w-4 h-4" />
+              Book Trip
+            </Button>
+          </div>
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
