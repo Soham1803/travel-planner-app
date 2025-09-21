@@ -1,306 +1,184 @@
 "use client"
 
 import { useChat } from "@ai-sdk/react"
-import { DefaultChatTransport } from "ai"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Send, MessageSquare, MapPin, Calendar, Star, Clock, Phone, Info, Navigation, Utensils } from "lucide-react"
+import { Send, MessageSquare, MapPin, Calendar, Star, Clock, Phone, Info, Navigation, Utensils, Brain, Lightbulb, ChevronDown, ChevronUp } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import TravelOutputPanel from "./travel-output-panel"
+import { useState, useEffect, useRef } from "react"
+import thinkingData from "@/app/data/thinking.json"
+
+// Configuration for thinking animation timing
+const THINKING_CONFIG = {
+  initialDelay: 1000, // Initial delay before thinking starts
+  stepBaseDelay: 800, // Base delay between steps
+  stepRandomDelay: 400, // Random additional delay (0 to this value)
+  typingSpeed: 35, // Characters per second for typing effect
+  pauseBetweenSentences: 200, // Pause between sentences in typing
+  dotAnimationSpeed: 400, // Speed of thinking dots animation
+  completionDelay: 2000, // Delay after thinking before showing output panel
+}
 
 export default function TextChatInterface() {
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
-    transport: new DefaultChatTransport({ api: "/api/travel-chat" }),
-  })
+  // Simple chat state management
+  const [messages, setMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; content: string }>>([])
+  const [input, setInput] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
-  const renderTravelContent = (part: any) => {
-    if (part.type === "tool-generateItinerary" && part.state === "output-available") {
-      const itinerary = part.output
-      return (
-        <div className="mt-4 space-y-4">
-          <div className="bg-muted/50 rounded-lg p-4 border border-border">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="font-semibold text-foreground flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-primary" />
-                {itinerary.duration}-Day {itinerary.travelStyle} Itinerary for {itinerary.destination}
-              </h4>
-              <Badge variant="outline" className="text-xs">
-                {itinerary.totalEstimatedCost}
-              </Badge>
-            </div>
+  // Thinking process state
+  const [isThinking, setIsThinking] = useState(false)
+  const [currentThinkingStep, setCurrentThinkingStep] = useState(0)
+  const [thinkingSteps, setThinkingSteps] = useState<Array<{ title: string; description: string; displayedText: string; isComplete: boolean }>>([])
+  const [showOutputPanel, setShowOutputPanel] = useState(false)
+  const [isThinkingExpanded, setIsThinkingExpanded] = useState(true)
+  const thinkingTimeouts = useRef<NodeJS.Timeout[]>([])
+  const typingIntervals = useRef<NodeJS.Timeout[]>([])
 
-            <div className="space-y-3">
-              {itinerary.itinerary.map((day: any, index: number) => (
-                <div key={index} className="bg-background/50 rounded-md p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-foreground">
-                      Day {day.day} - {day.title}
-                    </span>
-                    <Badge variant="secondary" className="text-xs">
-                      {day.estimatedCost}
-                    </Badge>
-                  </div>
-                  <div className="space-y-2">
-                    {day.activities.map((activity: any, i: number) => (
-                      <div key={i} className="flex items-start gap-2 text-sm">
-                        <span className="text-primary font-medium min-w-[70px]">{activity.time}</span>
-                        <div className="flex-1">
-                          <span className="text-foreground">{activity.activity}</span>
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />
-                            {activity.location}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {itinerary.interests && (
-              <div className="mt-3 pt-3 border-t border-border">
-                <p className="text-sm text-muted-foreground mb-2">
-                  <span className="font-medium">Interests:</span>
-                </p>
-                <div className="flex flex-wrap gap-1">
-                  {itinerary.interests.map((interest: string, i: number) => (
-                    <Badge key={i} variant="outline" className="text-xs">
-                      {interest}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )
+  // Auto-collapse thinking after a few steps to save space
+  useEffect(() => {
+    if (currentThinkingStep >= 2 && isThinkingExpanded) {
+      const timeout = setTimeout(() => {
+        setIsThinkingExpanded(false)
+      }, 3000) // Auto-collapse after 3 seconds when on step 3+
+      
+      return () => clearTimeout(timeout)
     }
+  }, [currentThinkingStep, isThinkingExpanded])
 
-    if (part.type === "tool-findAccommodations" && part.state === "output-available") {
-      const accommodations = part.output
-      return (
-        <div className="mt-4 space-y-4">
-          <div className="bg-muted/50 rounded-lg p-4 border border-border">
-            <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-              <Star className="w-4 h-4 text-primary" />
-              Recommended Hotels in {accommodations.destination}
-            </h4>
-            <div className="text-xs text-muted-foreground mb-3">
-              Check-in: {accommodations.checkIn} | Check-out: {accommodations.checkOut}
-            </div>
-
-            <div className="space-y-3">
-              {accommodations.hotels.map((hotel: any, index: number) => (
-                <div key={index} className="bg-background/50 rounded-md p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-foreground">{hotel.name}</span>
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1">
-                        {[...Array(Math.floor(hotel.rating))].map((_, i) => (
-                          <Star key={i} className="w-3 h-3 fill-primary text-primary" />
-                        ))}
-                        <span className="text-xs text-muted-foreground">{hotel.rating}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <p className="text-sm text-muted-foreground mb-2">{hotel.description}</p>
-
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-primary">${hotel.pricePerNight}/night</span>
-                    <span className="text-xs text-muted-foreground">{hotel.location}</span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 text-xs mb-2">
-                    <div>
-                      <span className="text-muted-foreground">Pros:</span>
-                      <ul className="text-foreground">
-                        {hotel.pros.map((pro: string, i: number) => (
-                          <li key={i}>• {pro}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Cons:</span>
-                      <ul className="text-foreground">
-                        {hotel.cons.map((con: string, i: number) => (
-                          <li key={i}>• {con}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    {hotel.amenities.map((amenity: string, i: number) => (
-                      <Badge key={i} variant="secondary" className="text-xs">
-                        {amenity}
-                      </Badge>
-                    ))}
-                  </div>
-
-                  <div className="text-xs text-muted-foreground">
-                    <span className="font-medium">Room:</span> {hotel.roomType} |
-                    <span className="font-medium"> Cancellation:</span> {hotel.cancellationPolicy}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )
-    }
-
-    if (part.type === "tool-findRestaurants" && part.state === "output-available") {
-      const restaurants = part.output
-      return (
-        <div className="mt-4 space-y-4">
-          <div className="bg-muted/50 rounded-lg p-4 border border-border">
-            <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-              <Utensils className="w-4 h-4 text-primary" />
-              {restaurants.cuisine} Restaurants in {restaurants.destination}
-            </h4>
-            {restaurants.mealType !== "Any" && (
-              <div className="text-xs text-muted-foreground mb-3">Meal Type: {restaurants.mealType}</div>
-            )}
-
-            <div className="space-y-3">
-              {restaurants.restaurants.map((restaurant: any, index: number) => (
-                <div key={index} className="bg-background/50 rounded-md p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-foreground">{restaurant.name}</span>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">
-                        {restaurant.cuisine}
-                      </Badge>
-                      <span className="text-xs font-medium text-primary">{restaurant.priceRange}</span>
-                    </div>
-                  </div>
-
-                  <p className="text-sm text-muted-foreground mb-2">{restaurant.description}</p>
-
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground mb-2">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {restaurant.hours}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Phone className="w-3 h-3" />
-                      {restaurant.phone}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      {[...Array(Math.floor(restaurant.rating))].map((_, i) => (
-                        <Star key={i} className="w-3 h-3 fill-primary text-primary" />
-                      ))}
-                      <span>{restaurant.rating}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    {restaurant.specialties.map((specialty: string, i: number) => (
-                      <Badge key={i} variant="outline" className="text-xs">
-                        {specialty}
-                      </Badge>
-                    ))}
-                  </div>
-
-                  <div className="text-xs text-muted-foreground">
-                    <div className="flex flex-wrap gap-2">
-                      {restaurant.dietaryOptions.map((option: string, i: number) => (
-                        <span key={i}>• {option}</span>
-                      ))}
-                    </div>
-                    <div className="mt-1">
-                      <span className="font-medium">Wait time:</span> {restaurant.averageWaitTime}
-                      {restaurant.reservationRequired && <span> | Reservation required</span>}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )
-    }
-
-    if (part.type === "tool-getLocalInformation" && part.state === "output-available") {
-      const localInfo = part.output
-      return (
-        <div className="mt-4 space-y-4">
-          <div className="bg-muted/50 rounded-lg p-4 border border-border">
-            <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-              <Info className="w-4 h-4 text-primary" />
-              Local Information for {localInfo.destination}
-            </h4>
-
-            <div className="space-y-4">
-              {/* Transportation */}
-              <div className="bg-background/50 rounded-md p-3">
-                <h5 className="font-medium text-foreground mb-2 flex items-center gap-2">
-                  <Navigation className="w-3 h-3 text-accent" />
-                  Transportation
-                </h5>
-                <div className="text-sm space-y-1">
-                  <div>
-                    <span className="text-muted-foreground">Options:</span>
-                    <ul className="text-foreground ml-2">
-                      {localInfo.transportation.publicTransport.map((option: string, i: number) => (
-                        <li key={i}>• {option}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Costs:</span>
-                    <div className="text-foreground ml-2">
-                      Metro: {localInfo.transportation.costs.metro} | Bus: {localInfo.transportation.costs.bus} | Taxi:{" "}
-                      {localInfo.transportation.costs.taxi}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Safety */}
-              <div className="bg-background/50 rounded-md p-3">
-                <h5 className="font-medium text-foreground mb-2">Safety & Emergency</h5>
-                <div className="text-sm space-y-1">
-                  <div>
-                    <span className="text-muted-foreground">Emergency Numbers:</span>
-                    <div className="text-foreground ml-2">
-                      Police: {localInfo.safety.emergency.police} | Medical: {localInfo.safety.emergency.medical} |
-                      Tourist Help: {localInfo.safety.emergency.tourist}
-                    </div>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Safety Tips:</span>
-                    <ul className="text-foreground ml-2">
-                      {localInfo.safety.tips.map((tip: string, i: number) => (
-                        <li key={i}>• {tip}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              {/* Practical Tips */}
-              <div className="bg-background/50 rounded-md p-3">
-                <h5 className="font-medium text-foreground mb-2">Practical Tips</h5>
-                <div className="text-sm">
-                  <ul className="text-foreground space-y-1">
-                    {localInfo.practicalTips.map((tip: string, i: number) => (
-                      <li key={i}>• {tip}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )
-    }
-
-    return null
+  // Clear all timeouts and intervals
+  const clearAllTimers = () => {
+    thinkingTimeouts.current.forEach(clearTimeout)
+    typingIntervals.current.forEach(clearTimeout)
+    thinkingTimeouts.current = []
+    typingIntervals.current = []
   }
+
+  // Typing effect for thinking steps
+  const typeText = (text: string, stepIndex: number, onComplete: () => void) => {
+    let currentText = ""
+    let charIndex = 0
+    
+    const typeChar = () => {
+      if (charIndex < text.length) {
+        currentText += text[charIndex]
+        setThinkingSteps(prev => 
+          prev.map((step, idx) => 
+            idx === stepIndex ? { ...step, displayedText: currentText } : step
+          )
+        )
+        charIndex++
+        
+        // Add pauses at sentence endings
+        const isPunctuation = /[.!?]/.test(text[charIndex - 1])
+        const delay = isPunctuation ? THINKING_CONFIG.pauseBetweenSentences : (1000 / THINKING_CONFIG.typingSpeed)
+        
+        const timeout = setTimeout(typeChar, delay)
+        typingIntervals.current.push(timeout)
+      } else {
+        onComplete()
+      }
+    }
+    
+    typeChar()
+  }
+
+  // Start thinking process
+  const startThinkingProcess = () => {
+    setIsThinking(true)
+    setCurrentThinkingStep(0)
+    setShowOutputPanel(false)
+    clearAllTimers()
+
+    // Initialize thinking steps
+    const steps = thinkingData.map(step => ({
+      ...step,
+      displayedText: "",
+      isComplete: false
+    }))
+    setThinkingSteps(steps)
+
+    // Start the thinking sequence
+    const processStep = (stepIndex: number) => {
+      if (stepIndex >= thinkingData.length) {
+        // Thinking complete - show completion animation
+        setThinkingSteps(prev => 
+          prev.map(step => ({ ...step, isComplete: true }))
+        )
+        
+        const timeout = setTimeout(() => {
+          setIsThinking(false)
+          // Add completion message
+          const completionMessage = {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant' as const,
+            content: "✅ Analysis complete! I've thoroughly planned your trip. Check the detailed insights panel on the right."
+          }
+          setMessages(prev => [...prev, completionMessage])
+          setShowOutputPanel(true)
+        }, THINKING_CONFIG.completionDelay)
+        thinkingTimeouts.current.push(timeout)
+        return
+      }
+
+      setCurrentThinkingStep(stepIndex)
+      
+      // Random delay before starting this step
+      const delay = THINKING_CONFIG.stepBaseDelay + Math.random() * THINKING_CONFIG.stepRandomDelay
+      
+      const timeout = setTimeout(() => {
+        typeText(steps[stepIndex].description, stepIndex, () => {
+          // Mark step as complete
+          setThinkingSteps(prev => 
+            prev.map((step, idx) => 
+              idx === stepIndex ? { ...step, isComplete: true } : step
+            )
+          )
+          
+          // Process next step
+          const nextTimeout = setTimeout(() => processStep(stepIndex + 1), 400)
+          thinkingTimeouts.current.push(nextTimeout)
+        })
+      }, stepIndex === 0 ? THINKING_CONFIG.initialDelay : delay)
+      
+      thinkingTimeouts.current.push(timeout)
+    }
+
+    processStep(0)
+  }
+
+  // Handle form submission
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!input.trim() || isThinking || isLoading) return
+
+    // Add user message
+    const userMessage = {
+      id: Date.now().toString(),
+      role: 'user' as const,
+      content: input.trim()
+    }
+    setMessages(prev => [...prev, userMessage])
+    setInput('')
+
+    // Start thinking process
+    setIsLoading(true)
+    const timeout = setTimeout(() => {
+      setIsLoading(false)
+      startThinkingProcess()
+    }, 500)
+    thinkingTimeouts.current.push(timeout)
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value)
+  }
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => clearAllTimers()
+  }, [])
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
@@ -314,7 +192,7 @@ export default function TextChatInterface() {
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.length === 0 && (
+          {messages.length === 0 && !isThinking && (
             <div className="flex justify-start">
               <div className="bg-muted text-muted-foreground rounded-lg p-3 max-w-[80%]">
                 <p className="text-sm">
@@ -335,38 +213,131 @@ export default function TextChatInterface() {
                   message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                 }`}
               >
-                {message.parts.map((part, index) => {
-                  if (part.type === "text") {
-                    return (
-                      <div key={index}>
-                        <p className="text-sm whitespace-pre-wrap">{part.text}</p>
-                      </div>
-                    )
-                  }
-
-                  // Render tool loading states
-                  if (part.type.startsWith("tool-") && part.state === "input-available") {
-                    const toolName = part.type
-                      .replace("tool-", "")
-                      .replace(/([A-Z])/g, " $1")
-                      .toLowerCase()
-                    return (
-                      <div key={index} className="text-sm text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
-                          <span>Generating {toolName}...</span>
-                        </div>
-                      </div>
-                    )
-                  }
-
-                  return renderTravelContent(part)
-                })}
+                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
               </div>
             </div>
           ))}
 
-          {isLoading && (
+          {/* Thinking Process Display */}
+          {isThinking && (
+            <div className="flex justify-start">
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 max-w-[90%] shadow-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <Brain className="w-5 h-5 text-blue-600 animate-pulse" />
+                  <span className="text-sm font-medium text-blue-700 dark:text-blue-300">AI Assistant is thinking...</span>
+                  <div className="flex gap-1 ml-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms', animationDuration: '1s' }}></div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms', animationDuration: '1s' }}></div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms', animationDuration: '1s' }}></div>
+                  </div>
+                  <button
+                    onClick={() => setIsThinkingExpanded(!isThinkingExpanded)}
+                    className="ml-auto flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 transition-colors"
+                  >
+                    {isThinkingExpanded ? (
+                      <>
+                        <ChevronUp className="w-3 h-3" />
+                        Collapse
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="w-3 h-3" />
+                        Expand
+                      </>
+                    )}
+                  </button>
+                </div>
+                
+                {/* Collapsed View - Show only current step */}
+                {!isThinkingExpanded && thinkingSteps[currentThinkingStep] && (
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-3 h-3 rounded-full mt-2 bg-blue-500 animate-pulse shadow-lg shadow-blue-500/30"></div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Lightbulb className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 leading-tight">
+                            {thinkingSteps[currentThinkingStep].title}
+                          </span>
+                        </div>
+                        <div className="bg-white/50 dark:bg-gray-800/50 rounded-md p-3 border border-gray-200/50 dark:border-gray-700/50">
+                          <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                            {thinkingSteps[currentThinkingStep].displayedText}
+                            {!thinkingSteps[currentThinkingStep].isComplete && (
+                              <span className="inline-block w-1 h-4 bg-blue-500 ml-1 animate-pulse"></span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Compact Progress bar */}
+                    <div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
+                      <div className="flex-1 h-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-1000 ease-out"
+                          style={{ width: `${((currentThinkingStep + 1) / thinkingSteps.length) * 100}%` }}
+                        ></div>
+                      </div>
+                      <span className="text-xs">{currentThinkingStep + 1}/{thinkingSteps.length}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Expanded View - Show all steps */}
+                {isThinkingExpanded && (
+                  <div className="space-y-4">
+                    {thinkingSteps.map((step, index) => (
+                      <div 
+                        key={index} 
+                        className={`transition-all duration-700 ease-out ${
+                          index <= currentThinkingStep ? 'opacity-100 transform translate-y-0 scale-100' : 'opacity-0 transform translate-y-4 scale-95'
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`flex-shrink-0 w-3 h-3 rounded-full mt-2 transition-all duration-500 ${
+                            step.isComplete ? 'bg-green-500 shadow-lg shadow-green-500/30' : 
+                            index === currentThinkingStep ? 'bg-blue-500 animate-pulse shadow-lg shadow-blue-500/30' : 
+                            'bg-gray-300'
+                          }`}></div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Lightbulb className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 leading-tight">{step.title}</span>
+                            </div>
+                            <div className="bg-white/50 dark:bg-gray-800/50 rounded-md p-3 border border-gray-200/50 dark:border-gray-700/50">
+                              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                                {step.displayedText}
+                                {index === currentThinkingStep && !step.isComplete && (
+                                  <span className="inline-block w-1 h-4 bg-blue-500 ml-1 animate-pulse"></span>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {/* Full Progress bar */}
+                    <div className="mt-4 pt-3 border-t border-blue-200/50 dark:border-blue-700/50">
+                      <div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
+                        <span>Progress:</span>
+                        <div className="flex-1 h-2 bg-blue-100 dark:bg-blue-900/30 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-1000 ease-out"
+                            style={{ width: `${((currentThinkingStep + 1) / thinkingSteps.length) * 100}%` }}
+                          ></div>
+                        </div>
+                        <span>{currentThinkingStep + 1}/{thinkingSteps.length}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {isLoading && !isThinking && (
             <div className="flex justify-start">
               <div className="bg-muted text-muted-foreground rounded-lg p-3">
                 <div className="flex items-center gap-2">
@@ -392,15 +363,16 @@ export default function TextChatInterface() {
               onChange={handleInputChange}
               placeholder="Ask me about your travel plans... (e.g., 'Plan a 5-day trip to Paris with cultural focus')"
               className="flex-1"
+              disabled={isThinking || isLoading}
             />
-            <Button type="submit" disabled={isLoading} size="icon">
+            <Button type="submit" disabled={isThinking || isLoading} size="icon">
               <Send className="w-4 h-4" />
             </Button>
           </form>
         </div>
       </Card>
 
-     <TravelOutputPanel /> 
+     <TravelOutputPanel showContent={showOutputPanel} /> 
     </div>
   )
 }

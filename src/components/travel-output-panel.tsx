@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -40,10 +40,128 @@ import {
 import GoogleMaps from "./GoogleMaps"
 import itineraryData from "@/app/data/iternary.json"
 import travelOptionsData from "@/app/data/travel-options.json"
+import accommodationsData from "@/app/data/accommodations.json"
 
-export default function TravelOutputPanel() {
+// Configuration for progressive loading
+const LOADING_CONFIG = {
+  sectionDelay: 800, // Delay between sections
+  sectionRandomDelay: 400, // Random additional delay
+  fadeInDuration: 600, // Fade in animation duration
+  initialDelay: 600, // Initial delay before first section
+}
+
+interface TravelOutputPanelProps {
+  showContent?: boolean
+}
+
+export default function TravelOutputPanel({ showContent = false }: TravelOutputPanelProps) {
   const [activeTab, setActiveTab] = useState("overview")
   const [favoriteItems, setFavoriteItems] = useState<Set<string>>(new Set())
+  const [loadedSections, setLoadedSections] = useState<Set<string>>(new Set())
+  const [isLoadingSection, setIsLoadingSection] = useState<string | null>(null)
+  const loadingTimeouts = useRef<NodeJS.Timeout[]>([])
+
+  // Clear all timeouts
+  const clearLoadingTimers = () => {
+    loadingTimeouts.current.forEach(clearTimeout)
+    loadingTimeouts.current = []
+  }
+
+  // Sections to load progressively
+  const sections = [
+    { key: "trip-summary", name: "Trip Summary" },
+    { key: "route-map", name: "Route Overview" },
+    { key: "travel-tips", name: "Travel Tips" },
+    { key: "itinerary-details", name: "Itinerary Details" },
+    { key: "travel-options", name: "Travel Options" },
+    { key: "accommodation-info", name: "Accommodation Info" },
+    { key: "dining-info", name: "Dining Information" },
+    { key: "contacts-info", name: "Local Contacts" }
+  ]
+
+  // Start progressive loading when showContent becomes true
+  useEffect(() => {
+    if (showContent) {
+      startProgressiveLoading()
+    } else {
+      // Reset when content is hidden
+      setLoadedSections(new Set())
+      setIsLoadingSection(null)
+      clearLoadingTimers()
+    }
+
+    return () => clearLoadingTimers()
+  }, [showContent])
+
+  const startProgressiveLoading = () => {
+    clearLoadingTimers()
+    setLoadedSections(new Set())
+    
+    const loadSection = (sectionIndex: number) => {
+      if (sectionIndex >= sections.length) return
+
+      const section = sections[sectionIndex]
+      setIsLoadingSection(section.key)
+
+      const delay = sectionIndex === 0 ? 
+        LOADING_CONFIG.initialDelay : 
+        LOADING_CONFIG.sectionDelay + Math.random() * LOADING_CONFIG.sectionRandomDelay
+
+      const timeout = setTimeout(() => {
+        setLoadedSections(prev => new Set([...prev, section.key]))
+        setIsLoadingSection(null)
+        
+        // Visual feedback for section completion
+        console.log(`✅ Section loaded: ${section.name}`)
+        
+        // Load next section
+        const nextTimeout = setTimeout(() => loadSection(sectionIndex + 1), 200)
+        loadingTimeouts.current.push(nextTimeout)
+      }, delay)
+      
+      loadingTimeouts.current.push(timeout)
+    }
+
+    loadSection(0)
+  }
+
+  const SectionLoader = ({ sectionKey, children }: { sectionKey: string; children: React.ReactNode }) => {
+    const isLoaded = loadedSections.has(sectionKey)
+    const isLoading = isLoadingSection === sectionKey
+
+    if (!showContent) return null
+
+    if (!isLoaded && !isLoading) return null
+
+    if (isLoading) {
+      return (
+        <div className="animate-pulse space-y-4 p-4">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="h-5 w-5 bg-muted rounded"></div>
+            <div className="h-6 bg-muted rounded w-1/3"></div>
+          </div>
+          <div className="space-y-3">
+            <div className="h-4 bg-muted rounded w-3/4"></div>
+            <div className="h-20 bg-muted rounded-lg"></div>
+            <div className="h-4 bg-muted rounded w-1/2"></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="h-12 bg-muted rounded"></div>
+              <div className="h-12 bg-muted rounded"></div>
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <div className="h-3 w-16 bg-muted rounded"></div>
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className={`transition-all duration-700 ease-out animate-in fade-in slide-in-from-bottom-4 ${isLoaded ? 'opacity-100 transform translate-y-0' : ''}`}>
+        {children}
+      </div>
+    )
+  }
 
   const toggleFavorite = (itemId: string) => {
     const newFavorites = new Set(favoriteItems)
@@ -85,12 +203,71 @@ export default function TravelOutputPanel() {
     }).format(amount)
   }
 
+  // Generate random rating between 3.8 and 4.5
+  const generateRating = (hotelName: string) => {
+    // Use hotel name as seed for consistent ratings
+    let hash = 0
+    for (let i = 0; i < hotelName.length; i++) {
+      const char = hotelName.charCodeAt(i)
+      hash = ((hash << 5) - hash) + char
+      hash = hash & hash // Convert to 32bit integer
+    }
+    const seed = Math.abs(hash) % 1000
+    const rating = 3.8 + (seed / 1000) * 0.7 // Range: 3.8 - 4.5
+    return Math.round(rating * 10) / 10
+  }
+
+  // Clean hotel name (remove booking site info)
+  const cleanHotelName = (name: string) => {
+    return name.split('"')[0].trim()
+  }
+
+  // Get accommodations for specific category and day
+  const getAccommodations = (category: 'hight' | 'medium' | 'low', day: number) => {
+    const categoryData = accommodationsData[category]
+    const dayData = categoryData?.[day.toString() as keyof typeof categoryData]
+    return dayData?.stays || []
+  }
+
+  // Render star rating
+  const renderStarRating = (rating: number) => {
+    const fullStars = Math.floor(rating)
+    const hasHalfStar = rating - fullStars >= 0.5
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0)
+
+    return (
+      <div className="flex items-center gap-1">
+        {[...Array(fullStars)].map((_, i) => (
+          <Star key={`full-${i}`} className="w-4 h-4 text-yellow-500 fill-current" />
+        ))}
+        {hasHalfStar && (
+          <div className="relative">
+            <Star className="w-4 h-4 text-gray-300" />
+            <div className="absolute inset-0 overflow-hidden" style={{ width: '50%' }}>
+              <Star className="w-4 h-4 text-yellow-500 fill-current" />
+            </div>
+          </div>
+        )}
+        {[...Array(emptyStars)].map((_, i) => (
+          <Star key={`empty-${i}`} className="w-4 h-4 text-gray-300" />
+        ))}
+        <span className="text-sm text-muted-foreground ml-1">({rating})</span>
+      </div>
+    )
+  }
+
   return (
     <Card className="gradient-card border-border overflow-hidden">
       <div className="p-4 border-b border-border">
         <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
           <MapPin className="w-5 h-5 text-primary" />
           Travel Insights & Planning
+          {isLoadingSection && (
+            <div className="ml-auto flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="w-2 h-2 bg-blue-500 rounded-full animate-ping"></div>
+              Loading {sections.find(s => s.key === isLoadingSection)?.name}...
+            </div>
+          )}
         </h2>
       </div>
 
@@ -107,76 +284,83 @@ export default function TravelOutputPanel() {
         <div className="overflow-y-auto flex-1 min-h-0">
           <TabsContent value="overview" className="p-4 space-y-6">
             {/* Trip Summary */}
-            <div className="space-y-4">
-              <h3 className="text-md font-medium text-foreground flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-accent" />
-                Trip Overview: {itineraryData.home_city} to {itineraryData.destination_city}
-              </h3>
+            <SectionLoader sectionKey="trip-summary">
+              <div className="space-y-4">
+                <h3 className="text-md font-medium text-foreground flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-accent" />
+                  Trip Overview: {itineraryData.home_city} to {itineraryData.destination_city}
+                </h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-muted/50 rounded-lg p-4 border border-border text-center">
-                  <Calendar className="w-8 h-8 text-primary mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-primary">{itineraryData.num_days}</div>
-                  <div className="text-sm text-muted-foreground">Days</div>
-                </div>
-                <div className="bg-muted/50 rounded-lg p-4 border border-border text-center">
-                  <MapPin className="w-8 h-8 text-primary mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-primary">{itineraryData.days.length}</div>
-                  <div className="text-sm text-muted-foreground">Planned Days</div>
-                </div>
-                <div className="bg-muted/50 rounded-lg p-4 border border-border text-center">
-                  <Mountain className="w-8 h-8 text-primary mx-auto mb-2" />
-                  <div className="text-lg font-bold text-primary">Hill Station</div>
-                  <div className="text-sm text-muted-foreground">Destination Type</div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-muted/50 rounded-lg p-4 border border-border text-center">
+                    <Calendar className="w-8 h-8 text-primary mx-auto mb-2" />
+                    <div className="text-2xl font-bold text-primary">{itineraryData.num_days}</div>
+                    <div className="text-sm text-muted-foreground">Days</div>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-4 border border-border text-center">
+                    <MapPin className="w-8 h-8 text-primary mx-auto mb-2" />
+                    <div className="text-2xl font-bold text-primary">{itineraryData.days.length}</div>
+                    <div className="text-sm text-muted-foreground">Planned Days</div>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-4 border border-border text-center">
+                    <Mountain className="w-8 h-8 text-primary mx-auto mb-2" />
+                    <div className="text-lg font-bold text-primary">Hill Station</div>
+                    <div className="text-sm text-muted-foreground">Destination Type</div>
+                  </div>
                 </div>
               </div>
-            </div>
+            </SectionLoader>
 
             {/* Interactive Map */}
-            <div className="space-y-3">
-              <h3 className="text-md font-medium text-foreground flex items-center gap-2">
-                <Navigation className="w-4 h-4 text-accent" />
-                Route Overview
-              </h3>
-              <div className="w-full h-[32rem]">
-                <GoogleMaps 
-                  startPoint={itineraryData.home_city} 
-                  endPoint={itineraryData.destination_city} 
-                  travelMode="DRIVING" 
-                />
-              </div>
-            </div>
-
-            {/* Travel Tips */}
-            <div className="space-y-3">
-              <h3 className="text-md font-medium text-foreground flex items-center gap-2">
-                <Info className="w-4 h-4 text-accent" />
-                Essential Travel Tips
-              </h3>
-              <div className="bg-muted/50 rounded-lg p-4 border border-border">
-                <div className="grid gap-2">
-                  {itineraryData.overall_tips.slice(0, 5).map((tip, index) => (
-                    <div key={index} className="flex items-start gap-2 text-sm">
-                      <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                      <span className="text-muted-foreground">{tip}</span>
-                    </div>
-                  ))}
+            <SectionLoader sectionKey="route-map">
+              <div className="space-y-3">
+                <h3 className="text-md font-medium text-foreground flex items-center gap-2">
+                  <Navigation className="w-4 h-4 text-accent" />
+                  Route Overview
+                </h3>
+                <div className="w-full h-[32rem]">
+                  <GoogleMaps 
+                    startPoint={itineraryData.home_city} 
+                    endPoint={itineraryData.destination_city} 
+                    travelMode="DRIVING" 
+                  />
                 </div>
               </div>
-            </div>
+            </SectionLoader>
+
+            {/* Travel Tips */}
+            <SectionLoader sectionKey="travel-tips">
+              <div className="space-y-3">
+                <h3 className="text-md font-medium text-foreground flex items-center gap-2">
+                  <Info className="w-4 h-4 text-accent" />
+                  Essential Travel Tips
+                </h3>
+                <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                  <div className="grid gap-2">
+                    {itineraryData.overall_tips.slice(0, 5).map((tip, index) => (
+                      <div key={index} className="flex items-start gap-2 text-sm">
+                        <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                        <span className="text-muted-foreground">{tip}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </SectionLoader>
           </TabsContent>
 
           <TabsContent value="itinerary" className="p-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-md font-medium text-foreground flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-accent" />
-                {itineraryData.num_days}-Day {itineraryData.destination_city} Itinerary
-              </h3>
-              <Button variant="outline" size="sm">
-                <Share2 className="w-4 h-4 mr-2" />
-                Share
-              </Button>
-            </div>
+            <SectionLoader sectionKey="itinerary-details">
+              <div className="flex items-center justify-between">
+                <h3 className="text-md font-medium text-foreground flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-accent" />
+                  {itineraryData.num_days}-Day {itineraryData.destination_city} Itinerary
+                </h3>
+                <Button variant="outline" size="sm">
+                  <Share2 className="w-4 h-4 mr-2" />
+                  Share
+                </Button>
+              </div>
 
             {itineraryData.days.map((day) => (
               <div key={day.day} className="bg-muted/50 rounded-lg p-4 border border-border">
@@ -250,16 +434,18 @@ export default function TravelOutputPanel() {
                 )}
               </div>
             ))}
+            </SectionLoader>
           </TabsContent>
 
           <TabsContent value="travel" className="p-4 space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-md font-medium text-foreground flex items-center gap-2">
-                <Plane className="w-4 h-4 text-accent" />
-                Travel Options: {travelOptionsData.trip.from_city} to {travelOptionsData.trip.to_city}
-              </h3>
-              <Badge variant="secondary">{travelOptionsData.trip.duration_days} Days Trip</Badge>
-            </div>
+            <SectionLoader sectionKey="travel-options">
+              <div className="flex items-center justify-between">
+                <h3 className="text-md font-medium text-foreground flex items-center gap-2">
+                  <Plane className="w-4 h-4 text-accent" />
+                  Travel Options: {travelOptionsData.trip.from_city} to {travelOptionsData.trip.to_city}
+                </h3>
+                <Badge variant="secondary">{travelOptionsData.trip.duration_days} Days Trip</Badge>
+              </div>
 
             {/* Outbound Journey */}
             <div className="space-y-4">
@@ -440,50 +626,228 @@ export default function TravelOutputPanel() {
                 </div>
               </div>
             </div>
+            </SectionLoader>
           </TabsContent>
 
           <TabsContent value="hotels" className="p-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-md font-medium text-foreground flex items-center gap-2">
-                <Building className="w-4 h-4 text-accent" />
-                Recommended Accommodations in {itineraryData.destination_city}
-              </h3>
-            </div>
+            <SectionLoader sectionKey="accommodation-info">
+              <div className="flex items-center justify-between">
+                <h3 className="text-md font-medium text-foreground flex items-center gap-2">
+                  <Building className="w-4 h-4 text-accent" />
+                  Recommended Accommodations in {itineraryData.destination_city}
+                </h3>
+              </div>
 
-            <div className="bg-muted/50 rounded-lg p-6 border border-border text-center">
-              <Building className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h4 className="font-medium text-foreground mb-2">Accommodation Recommendations</h4>
-              <p className="text-sm text-muted-foreground mb-4">
-                Based on your {itineraryData.num_days}-day itinerary to {itineraryData.destination_city}, here are some accommodation suggestions:
-              </p>
-              <div className="text-left space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
-                  <span className="text-muted-foreground">Stay near Mall Road for easy access to main attractions</span>
+              {/* Luxury Category */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Badge variant="default" className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
+                    ★ Luxury
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">Premium comfort and exceptional service</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
-                  <span className="text-muted-foreground">Book hotels with mountain view rooms</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
-                  <span className="text-muted-foreground">Look for properties with heating facilities</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
-                  <span className="text-muted-foreground">Consider heritage hotels for authentic experience</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {getAccommodations('hight', 1).map((hotel, index) => {
+                    const cleanName = cleanHotelName(hotel.name)
+                    const rating = generateRating(cleanName)
+                    return (
+                      <div key={index} className="bg-muted/50 rounded-lg border border-border overflow-hidden hover:shadow-lg transition-shadow">
+                        <div className="relative">
+                          <img
+                            src={hotel.imageUrl || "/placeholder.svg"}
+                            alt={cleanName}
+                            className="w-full h-48 object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement
+                              target.src = "/placeholder.svg"
+                            }}
+                          />
+                          <div className="absolute top-2 right-2">
+                            <Badge variant="secondary" className="bg-white/90 text-foreground">
+                              Luxury
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="p-4">
+                          <h4 className="font-semibold text-foreground mb-2">{cleanName}</h4>
+                          <div className="flex items-center justify-between mb-3">
+                            {renderStarRating(rating)}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleFavorite(`luxury-${index}`)}
+                              className="text-muted-foreground hover:text-red-500"
+                            >
+                              <Heart className={`w-4 h-4 ${favoriteItems.has(`luxury-${index}`) ? 'fill-current text-red-500' : ''}`} />
+                            </Button>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <MapPin className="w-3 h-3" />
+                            <span>Near Mall Road, Shimla</span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Badge variant="outline" className="text-xs">Free WiFi</Badge>
+                            <Badge variant="outline" className="text-xs">Mountain View</Badge>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
-            </div>
+
+              {/* Mid-Range Category */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
+                    ★ Mid-Range
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">Great value with good amenities</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {getAccommodations('medium', 1).map((hotel, index) => {
+                    const cleanName = cleanHotelName(hotel.name)
+                    const rating = generateRating(cleanName)
+                    return (
+                      <div key={index} className="bg-muted/50 rounded-lg border border-border overflow-hidden hover:shadow-lg transition-shadow">
+                        <div className="relative">
+                          <img
+                            src={hotel.imageUrl || "/placeholder.svg"}
+                            alt={cleanName}
+                            className="w-full h-48 object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement
+                              target.src = "/placeholder.svg"
+                            }}
+                          />
+                          <div className="absolute top-2 right-2">
+                            <Badge variant="secondary" className="bg-white/90 text-foreground">
+                              Mid-Range
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="p-4">
+                          <h4 className="font-semibold text-foreground mb-2">{cleanName}</h4>
+                          <div className="flex items-center justify-between mb-3">
+                            {renderStarRating(rating)}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleFavorite(`medium-${index}`)}
+                              className="text-muted-foreground hover:text-red-500"
+                            >
+                              <Heart className={`w-4 h-4 ${favoriteItems.has(`medium-${index}`) ? 'fill-current text-red-500' : ''}`} />
+                            </Button>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <MapPin className="w-3 h-3" />
+                            <span>Central Location, Shimla</span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Badge variant="outline" className="text-xs">Free WiFi</Badge>
+                            <Badge variant="outline" className="text-xs">Breakfast</Badge>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Budget Category */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="bg-gradient-to-r from-green-500 to-teal-500 text-white">
+                    ★ Budget-Friendly
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">Affordable stays with essential amenities</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {getAccommodations('low', 1).map((hotel, index) => {
+                    const cleanName = cleanHotelName(hotel.name)
+                    const rating = generateRating(cleanName)
+                    return (
+                      <div key={index} className="bg-muted/50 rounded-lg border border-border overflow-hidden hover:shadow-lg transition-shadow">
+                        <div className="relative">
+                          <img
+                            src={hotel.imageUrl || "/placeholder.svg"}
+                            alt={cleanName}
+                            className="w-full h-48 object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement
+                              target.src = "/placeholder.svg"
+                            }}
+                          />
+                          <div className="absolute top-2 right-2">
+                            <Badge variant="secondary" className="bg-white/90 text-foreground">
+                              Budget
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="p-4">
+                          <h4 className="font-semibold text-foreground mb-2">{cleanName}</h4>
+                          <div className="flex items-center justify-between mb-3">
+                            {renderStarRating(rating)}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleFavorite(`budget-${index}`)}
+                              className="text-muted-foreground hover:text-red-500"
+                            >
+                              <Heart className={`w-4 h-4 ${favoriteItems.has(`budget-${index}`) ? 'fill-current text-red-500' : ''}`} />
+                            </Button>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <MapPin className="w-3 h-3" />
+                            <span>Accessible Location, Shimla</span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Badge variant="outline" className="text-xs">WiFi</Badge>
+                            <Badge variant="outline" className="text-xs">Shared Facilities</Badge>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Booking Tips */}
+              <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
+                  <Info className="w-4 h-4 text-blue-500" />
+                  Accommodation Booking Tips
+                </h4>
+                <div className="grid gap-2">
+                  <div className="flex items-start gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span className="text-muted-foreground">Book well in advance during peak season (April-June, October-November)</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span className="text-muted-foreground">Look for properties with heating facilities as nights can be cold</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span className="text-muted-foreground">Stay near Mall Road for easy access to main attractions and dining</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span className="text-muted-foreground">Check cancellation policies, especially for mountain destinations</span>
+                  </div>
+                </div>
+              </div>
+            </SectionLoader>
           </TabsContent>
 
           <TabsContent value="dining" className="p-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-md font-medium text-foreground flex items-center gap-2">
-                <Utensils className="w-4 h-4 text-accent" />
-                Local Cuisine & Dining in {itineraryData.destination_city}
-              </h3>
-            </div>
+            <SectionLoader sectionKey="dining-info">
+              <div className="flex items-center justify-between">
+                <h3 className="text-md font-medium text-foreground flex items-center gap-2">
+                  <Utensils className="w-4 h-4 text-accent" />
+                  Local Cuisine & Dining in {itineraryData.destination_city}
+                </h3>
+              </div>
 
             <div className="bg-muted/50 rounded-lg p-6 border border-border text-center">
               <Utensils className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -521,6 +885,7 @@ export default function TravelOutputPanel() {
                 </div>
               </div>
             </div>
+            </SectionLoader>
           </TabsContent>
 
           <TabsContent value="contacts" className="p-4 space-y-4">
@@ -621,10 +986,11 @@ export default function TravelOutputPanel() {
           </TabsContent>
 
           <TabsContent value="contacts" className="p-4 space-y-4">
-            <h3 className="text-md font-medium text-foreground flex items-center gap-2">
-              <Phone className="w-4 h-4 text-accent" />
-              Important Local Contacts & Information
-            </h3>
+            <SectionLoader sectionKey="contacts-info">
+              <h3 className="text-md font-medium text-foreground flex items-center gap-2">
+                <Phone className="w-4 h-4 text-accent" />
+                Important Local Contacts & Information
+              </h3>
 
             <div className="grid gap-4">
               {/* Emergency Contacts */}
@@ -715,6 +1081,7 @@ export default function TravelOutputPanel() {
                 </div>
               </div>
             </div>
+            </SectionLoader>
           </TabsContent>
         </div>
       </Tabs>
