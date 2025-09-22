@@ -15,7 +15,11 @@ interface AudioMessage {
   isPlaying?: boolean
 }
 
-export default function AudioChatInterface() {
+interface AudioChatInterfaceProps {
+  onTriggerApiModal: () => void
+}
+
+export default function AudioChatInterface({ onTriggerApiModal }: AudioChatInterfaceProps) {
   const [messages, setMessages] = useState<AudioMessage[]>([
     {
       id: "1",
@@ -34,6 +38,11 @@ export default function AudioChatInterface() {
   // Remove audio context initialization - only recording animation now
 
   const startRecording = async () => {
+    // Trigger API modal when user tries to start recording
+    onTriggerApiModal()
+    
+    // Comment out the actual recording functionality since we want to trigger the modal
+    /*
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       const mediaRecorder = new MediaRecorder(stream)
@@ -56,6 +65,7 @@ export default function AudioChatInterface() {
       console.error("Error accessing microphone:", error)
       alert("Unable to access microphone. Please check your permissions.")
     }
+    */
   }
 
   const stopRecording = () => {
@@ -211,7 +221,7 @@ export default function AudioChatInterface() {
       </Card>
 
       {/* Travel Output Panel */}
-      <TravelOutputPanel />
+      <TravelOutputPanel isThinkingComplete={false} />
     </div>
   )
 }

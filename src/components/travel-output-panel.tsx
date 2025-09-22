@@ -54,9 +54,10 @@ const LOADING_CONFIG = {
 
 interface TravelOutputPanelProps {
   showContent?: boolean
+  isThinkingComplete?: boolean
 }
 
-export default function TravelOutputPanel({ showContent = false }: TravelOutputPanelProps) {
+export default function TravelOutputPanel({ showContent = false, isThinkingComplete = false }: TravelOutputPanelProps) {
   const [activeTab, setActiveTab] = useState("overview")
   const [favoriteItems, setFavoriteItems] = useState<Set<string>>(new Set())
   const [loadedSections, setLoadedSections] = useState<Set<string>>(new Set())
@@ -926,199 +927,106 @@ export default function TravelOutputPanel({ showContent = false }: TravelOutputP
           </TabsContent>
 
           <TabsContent value="contacts" className="p-4 space-y-4">
-            <h3 className="text-md font-medium text-foreground flex items-center gap-2">
-              <Phone className="w-4 h-4 text-accent" />
-              Important Local Contacts & Information
-            </h3>
+            {!isThinkingComplete ? (
+              <div></div>
+            ) : (
+              <SectionLoader sectionKey="contacts-info">
+                <h3 className="text-md font-medium text-foreground flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-accent" />
+                  Important Local Contacts & Information
+                </h3>
 
-            <div className="grid gap-4">
-              {/* Emergency Contacts */}
-              <div className="bg-muted/50 rounded-lg p-4 border border-border">
-                <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-red-500" />
-                  Emergency Contacts
-                </h4>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between bg-background/50 rounded-md p-2">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="destructive" className="text-xs">Emergency</Badge>
-                      <span className="font-medium text-foreground">Police</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-mono text-primary">100</span>
-                      <Button variant="outline" size="sm">
-                        <Phone className="w-3 h-3 mr-1" />
-                        Call
-                      </Button>
+                <div className="grid gap-4">
+                  {/* Emergency Contacts */}
+                  <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                    <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-red-500" />
+                      Emergency Contacts
+                    </h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between bg-background/50 rounded-md p-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="destructive" className="text-xs">Emergency</Badge>
+                          <span className="font-medium text-foreground">Police</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-mono text-primary">100</span>
+                          <Button variant="outline" size="sm">
+                            <Phone className="w-3 h-3 mr-1" />
+                            Call
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between bg-background/50 rounded-md p-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="destructive" className="text-xs">Emergency</Badge>
+                          <span className="font-medium text-foreground">Fire/Ambulance</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-mono text-primary">101/108</span>
+                          <Button variant="outline" size="sm">
+                            <Phone className="w-3 h-3 mr-1" />
+                            Call
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between bg-background/50 rounded-md p-2">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="destructive" className="text-xs">Emergency</Badge>
-                      <span className="font-medium text-foreground">Fire/Ambulance</span>
+
+                  {/* Tourist Information */}
+                  <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                    <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
+                      <Info className="w-4 h-4 text-blue-500" />
+                      Tourist Information
+                    </h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between bg-background/50 rounded-md p-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="text-xs">Tourist Info</Badge>
+                          <span className="font-medium text-foreground">Shimla Tourist Office</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-mono text-primary">0177-2652561</span>
+                          <Button variant="outline" size="sm">
+                            <Phone className="w-3 h-3 mr-1" />
+                            Call
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between bg-background/50 rounded-md p-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="text-xs">Transport</Badge>
+                          <span className="font-medium text-foreground">HRTC Bus Stand</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-mono text-primary">0177-2652574</span>
+                          <Button variant="outline" size="sm">
+                            <Phone className="w-3 h-3 mr-1" />
+                            Call
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-mono text-primary">101/108</span>
-                      <Button variant="outline" size="sm">
-                        <Phone className="w-3 h-3 mr-1" />
-                        Call
-                      </Button>
+                  </div>
+
+                  {/* Local Transit Tips */}
+                  <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                    <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
+                      <Car className="w-4 h-4 text-green-500" />
+                      Local Transportation Tips
+                    </h4>
+                    <div className="space-y-2">
+                      {travelOptionsData.local_transit_in_shimla.map((tip, index) => (
+                        <div key={index} className="flex items-start gap-2 text-sm">
+                          <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-muted-foreground">{tip}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Tourist Information */}
-              <div className="bg-muted/50 rounded-lg p-4 border border-border">
-                <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
-                  <Info className="w-4 h-4 text-blue-500" />
-                  Tourist Information
-                </h4>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between bg-background/50 rounded-md p-2">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">Tourist Info</Badge>
-                      <span className="font-medium text-foreground">Shimla Tourist Office</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-mono text-primary">0177-2652561</span>
-                      <Button variant="outline" size="sm">
-                        <Phone className="w-3 h-3 mr-1" />
-                        Call
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between bg-background/50 rounded-md p-2">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">Transport</Badge>
-                      <span className="font-medium text-foreground">HRTC Bus Stand</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-mono text-primary">0177-2652574</span>
-                      <Button variant="outline" size="sm">
-                        <Phone className="w-3 h-3 mr-1" />
-                        Call
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Local Transit Tips */}
-              <div className="bg-muted/50 rounded-lg p-4 border border-border">
-                <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
-                  <Car className="w-4 h-4 text-green-500" />
-                  Local Transportation Tips
-                </h4>
-                <div className="space-y-2">
-                  {travelOptionsData.local_transit_in_shimla.map((tip, index) => (
-                    <div key={index} className="flex items-start gap-2 text-sm">
-                      <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                      <span className="text-muted-foreground">{tip}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="contacts" className="p-4 space-y-4">
-            <SectionLoader sectionKey="contacts-info">
-              <h3 className="text-md font-medium text-foreground flex items-center gap-2">
-                <Phone className="w-4 h-4 text-accent" />
-                Important Local Contacts & Information
-              </h3>
-
-            <div className="grid gap-4">
-              {/* Emergency Contacts */}
-              <div className="bg-muted/50 rounded-lg p-4 border border-border">
-                <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-red-500" />
-                  Emergency Contacts
-                </h4>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between bg-background/50 rounded-md p-2">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="destructive" className="text-xs">Emergency</Badge>
-                      <span className="font-medium text-foreground">Police</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-mono text-primary">100</span>
-                      <Button variant="outline" size="sm">
-                        <Phone className="w-3 h-3 mr-1" />
-                        Call
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between bg-background/50 rounded-md p-2">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="destructive" className="text-xs">Emergency</Badge>
-                      <span className="font-medium text-foreground">Fire/Ambulance</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-mono text-primary">101/108</span>
-                      <Button variant="outline" size="sm">
-                        <Phone className="w-3 h-3 mr-1" />
-                        Call
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Tourist Information */}
-              <div className="bg-muted/50 rounded-lg p-4 border border-border">
-                <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
-                  <Info className="w-4 h-4 text-blue-500" />
-                  Tourist Information
-                </h4>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between bg-background/50 rounded-md p-2">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">Tourist Info</Badge>
-                      <span className="font-medium text-foreground">Shimla Tourist Office</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-mono text-primary">0177-2652561</span>
-                      <Button variant="outline" size="sm">
-                        <Phone className="w-3 h-3 mr-1" />
-                        Call
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between bg-background/50 rounded-md p-2">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">Transport</Badge>
-                      <span className="font-medium text-foreground">HRTC Bus Stand</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-mono text-primary">0177-2652574</span>
-                      <Button variant="outline" size="sm">
-                        <Phone className="w-3 h-3 mr-1" />
-                        Call
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Local Transit Tips */}
-              <div className="bg-muted/50 rounded-lg p-4 border border-border">
-                <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
-                  <Car className="w-4 h-4 text-green-500" />
-                  Local Transportation Tips
-                </h4>
-                <div className="space-y-2">
-                  {travelOptionsData.local_transit_in_shimla.map((tip, index) => (
-                    <div key={index} className="flex items-start gap-2 text-sm">
-                      <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                      <span className="text-muted-foreground">{tip}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            </SectionLoader>
+              </SectionLoader>
+            )}
           </TabsContent>
         </div>
       </Tabs>

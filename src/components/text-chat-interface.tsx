@@ -10,6 +10,10 @@ import TravelOutputPanel from "./travel-output-panel"
 import { useState, useEffect, useRef } from "react"
 import thinkingData from "@/app/data/thinking.json"
 
+interface TextChatInterfaceProps {
+  onTriggerApiModal: () => void
+}
+
 // Configuration for thinking animation timing
 const THINKING_CONFIG = {
   initialDelay: 800, // Initial delay before thinking starts
@@ -21,7 +25,7 @@ const THINKING_CONFIG = {
   completionDelay: 2000, // Delay after thinking before showing output panel
 }
 
-export default function TextChatInterface() {
+export default function TextChatInterface({ onTriggerApiModal }: TextChatInterfaceProps) {
   // Simple chat state management
   const [messages, setMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; content: string }>>([])
   const [input, setInput] = useState('')
@@ -32,6 +36,7 @@ export default function TextChatInterface() {
   const [currentThinkingStep, setCurrentThinkingStep] = useState(0)
   const [thinkingSteps, setThinkingSteps] = useState<Array<{ title: string; description: string; displayedText: string; isComplete: boolean }>>([])
   const [showOutputPanel, setShowOutputPanel] = useState(false)
+  const [isThinkingComplete, setIsThinkingComplete] = useState(false)
   const [isThinkingExpanded, setIsThinkingExpanded] = useState(true)
   const thinkingTimeouts = useRef<NodeJS.Timeout[]>([])
   const typingIntervals = useRef<NodeJS.Timeout[]>([])
@@ -109,6 +114,7 @@ export default function TextChatInterface() {
         
         const timeout = setTimeout(() => {
           setIsThinking(false)
+          setIsThinkingComplete(true)
           // Add completion message
           const completionMessage = {
             id: (Date.now() + 1).toString(),
@@ -361,6 +367,7 @@ export default function TextChatInterface() {
             <Input
               value={input}
               onChange={handleInputChange}
+              onFocus={onTriggerApiModal}
               placeholder="Ask me about your travel plans... (e.g., 'Plan a 5-day trip to Paris with cultural focus')"
               className="flex-1"
               disabled={isThinking || isLoading}
@@ -372,7 +379,7 @@ export default function TextChatInterface() {
         </div>
       </Card>
 
-     <TravelOutputPanel showContent={showOutputPanel} /> 
+     <TravelOutputPanel showContent={showOutputPanel} isThinkingComplete={isThinkingComplete} /> 
     </div>
   )
 }

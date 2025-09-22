@@ -11,7 +11,7 @@ export default function TravelPlannerApp() {
   const [activeMode, setActiveMode] = useState<"text" | "audio">("text")
   const [selectedLanguage, setSelectedLanguage] = useState("en")
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const [showApiModal, setShowApiModal] = useState(true)
+  const [showApiModal, setShowApiModal] = useState(false)
   const [geminiApiKey, setGeminiApiKey] = useState("")
   const [mapsApiKey, setMapsApiKey] = useState("")
   const [showError, setShowError] = useState(false)
@@ -35,6 +35,12 @@ export default function TravelPlannerApp() {
   // Handle API key submission
   const handleProceed = () => {
     setShowError(true)
+  }
+
+  // Function to trigger the API modal
+  const triggerApiModal = () => {
+    setShowApiModal(true)
+    setShowError(false) // Reset error when opening modal
   }
 
   // Close dropdown when clicking outside
@@ -201,7 +207,11 @@ export default function TravelPlannerApp() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6 h-[calc(100vh-80px)]">
-        {activeMode === "text" ? <TextChatInterface /> : <AudioChatInterface />}
+        {activeMode === "text" ? (
+          <TextChatInterface onTriggerApiModal={triggerApiModal} />
+        ) : (
+          <AudioChatInterface onTriggerApiModal={triggerApiModal} />
+        )}
       </main>
     </div>
   )
